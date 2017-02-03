@@ -1,3 +1,4 @@
+/* global assert */
 // maintain for testing backwards compatability
 describe('AmplitudeClient', function() {
   var AmplitudeClient = require('../src/amplitude-client.js');
@@ -17,13 +18,16 @@ describe('AmplitudeClient', function() {
   var userId = 'user';
   var amplitude;
   var server;
+  var clock;
 
   beforeEach(function() {
     amplitude = new AmplitudeClient();
     server = sinon.fakeServer.create();
+    clock = sinon.useFakeTimers(new Date().getTime());
   });
 
   afterEach(function() {
+    clock.restore();
     server.restore();
   });
 
@@ -559,7 +563,7 @@ describe('AmplitudeClient', function() {
       assert.equal(events[1].event_type, '$identify');
     });
 
-it ('should load saved events from localStorage new keys and send events', function() {
+    it ('should load saved events from localStorage new keys and send events', function() {
       var existingEvent = '[{"device_id":"test_device_id","user_id":"test_user_id","timestamp":1453769146589,' +
         '"event_id":49,"session_id":1453763315544,"event_type":"clicked","version_name":"Web","platform":"Web"' +
         ',"os_name":"Chrome","os_version":"47","device_model":"Mac","language":"en-US","api_properties":{},' +
@@ -1104,6 +1108,12 @@ describe('setVersionName', function() {
       assert.equal(querystring.parse(server.requests[0].requestBody).client, apiKey);
     });
 
+    it('should send withCredentials', function() {
+      amplitude.logEvent('Event Type 2');
+      assert.lengthOf(server.requests, 1);
+      assert.equal(server.requests[0].withCredentials, true);
+    });
+
     it('should send api version', function() {
       amplitude.logEvent('Event Type 3');
       assert.lengthOf(server.requests, 1);
@@ -1175,6 +1185,24 @@ describe('setVersionName', function() {
       amplitude.logEvent('Event', {index: 3});
 
       server.respondWith('success');
+      server.respond();
+
+      amplitude.logEvent('Event', {index: 4});
+
+      assert.lengthOf(server.requests, 2);
+      var events = JSON.parse(querystring.parse(server.requests[1].requestBody).e);
+      assert.lengthOf(events, 1);
+      assert.deepEqual(events[0].event_properties, {index: 4});
+    });
+
+    it('should only require statusCode to be 200', function() {
+      amplitude._sending = true;
+      amplitude.logEvent('Event', {index: 1});
+      amplitude.logEvent('Event', {index: 2});
+      amplitude._sending = false;
+      amplitude.logEvent('Event', {index: 3});
+
+      server.respondWith('something else');
       server.respond();
 
       amplitude.logEvent('Event', {index: 4});
@@ -1266,7 +1294,7 @@ describe('setVersionName', function() {
       server.respondWith('success');
       server.respond();
       assert.lengthOf(amplitude._unsentEvents, 0);
-      var events = JSON.parse(querystring.parse(server.requests[1].requestBody).e);
+      events = JSON.parse(querystring.parse(server.requests[1].requestBody).e);
       assert.lengthOf(events, 5);
       assert.deepEqual(events[4].event_properties, {index: 14});
     });
@@ -2072,10 +2100,9 @@ describe('setVersionName', function() {
     });
 
     it('should track the raw user agent string', function() {
-      // Unit test UA is set by phantomJS test environment, should be constant for all tests
-      var phantomJSUA = 'AppleWebKit/534.34 (KHTML, like Gecko) PhantomJS/1.9.7 Safari/534.34';
-      assert.isTrue(navigator.userAgent.indexOf(phantomJSUA) > -1);
-      assert.isTrue(amplitude._userAgent.indexOf(phantomJSUA) > -1);
+      // this is set in mocha-phantomjs-setup.js as a phantomjs config
+      //var phantomJSUA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X) AppleWebKit/538.1 (KHTML, like Gecko) PhantomJS/2.1.1 Safari/538.1';
+      assert.equal(navigator.userAgent, amplitude._userAgent);
 
       // log an event and verify UA field is filled out
       amplitude.logEvent('testEvent');
@@ -2083,7 +2110,7 @@ describe('setVersionName', function() {
       var events = JSON.parse(querystring.parse(server.requests[0].requestBody).e);
       assert.lengthOf(events, 1);
       assert.equal(events[0].event_type, 'testEvent');
-      assert.isTrue(events[0].user_agent.indexOf(phantomJSUA) > -1);
+      assert.isTrue(events[0].user_agent.indexOf(navigator.userAgent) > -1);
     });
 
     it('should allow logging event with custom timestamp', function() {

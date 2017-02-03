@@ -12,7 +12,7 @@ OUT = $(PROJECT).js
 SNIPPET_OUT = $(PROJECT)-snippet.min.js
 SEGMENT_SNIPPET_OUT = $(PROJECT)-segment-snippet.min.js
 MIN_OUT = $(PROJECT).min.js
-MOCHA = $(BINS)/mocha-phantomjs
+KARMA = $(BINS)/karma
 
 #
 # Default target.
@@ -35,8 +35,8 @@ clean:
 #
 
 test: build test/browser/index.html
-	@$(MOCHA) test/browser/index.html
-	@$(MOCHA) test/browser/snippet.html
+	@$(KARMA) test/browser/index.html
+	@$(KARMA) test/browser/snippet.html
 
 
 #

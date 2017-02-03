@@ -30,6 +30,7 @@ Request.prototype.send = function(callback) {
   } else {
     var xhr = new XMLHttpRequest();
     xhr.open('POST', this.url, true);
+    xhr.withCredentials = true;
     xhr.onreadystatechange = function() {
       if (xhr.readyState === 4) {
         callback(xhr.status, xhr.responseText);
