@@ -2,16 +2,11 @@
 // maintain for testing backwards compatability
 describe('AmplitudeClient', function() {
   var AmplitudeClient = require('../src/amplitude-client.js');
-  var getUtmData = require('../src/utm.js');
   var localStorage = require('../src/localstorage.js');
   var CookieStorage = require('../src/cookiestorage.js');
-  var Base64 = require('../src/base64.js');
   var cookie = require('../src/cookie.js');
-  var utils = require('../src/utils.js');
   var querystring = require('querystring');
-  var JSON = require('json');
   var Identify = require('../src/identify.js');
-  var Revenue = require('../src/revenue.js');
   var constants = require('../src/constants.js');
   var apiKey = '000000';
   var keySuffix = '_' + apiKey.slice(0,6);

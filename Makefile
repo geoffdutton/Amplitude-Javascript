@@ -49,7 +49,7 @@ node_modules: package.json
 #
 # Target for updating version.
 
-version: component.json package.json src/version.js
+version: package.json src/version.js
 	node scripts/version
 
 #

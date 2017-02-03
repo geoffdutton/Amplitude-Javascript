@@ -38,8 +38,8 @@ module.exports = function(config) {
     },
 
     preprocessors: {
-      'test/*.js': ['duo', 'sourcemap'],
-      'src/*.js': ['duo', 'sourcemap']
+      'test/*.js': ['webpack', 'sourcemap'],
+      'src/*.js': ['webpack', 'sourcemap']
     },
 
     client: {
@@ -50,11 +50,14 @@ module.exports = function(config) {
       }
     },
     logLevel: config.LOG_INFO,
-    duo: {
-      root: '.',
-      development: true,
-      sourceMap: 'inline',
-      standalone: true
+
+    webpack: {
+      devtool: 'inline-source-map'
+    },
+
+    webpackMiddleware: {
+      stats: 'errors-only'
     }
+
   });
 };

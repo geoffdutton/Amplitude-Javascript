@@ -9,6 +9,10 @@ describe('ua-parser', function() {
       parser.setUA(browser[1]);
       var uap = parser.getResult();
 
+      if(uap.browser.name !== browser[2]) {
+        console.log(uap)
+      }
+
       assert.equal(browser[2], uap.browser.name || undefined);
       assert.equal(browser[3], uap.browser.major || uap.browser.version || undefined);
       assert.equal(browser[4], uap.os.name || undefined);
