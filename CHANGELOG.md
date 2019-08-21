@@ -1,4 +1,107 @@
-## Unreleased
+### 5.3.0 (August 14, 2019)
+
+* Add ES Module build #183
+* Fix setDomain bug where setting the cooke domain clobbered other cookie setings
+
+### 5.2.2 (March 29, 2019)
+
+* Stop warning when `undefined` property values are instrumented
+
+### 5.2.1 (March 28, 2019)
+
+* Fix npm publish failure where built files were missing.
+
+### 5.2.0 (March 28, 2019)
+
+* Stop warning when `null` property values are instrumented
+* Allow for objects nested within arrays
+
+### 5.0.0 (March 19, 2019)
+
+* Add `onInit` method that accepts a callback that will be invoked after init
+* Allow for api endpoints that do not end with a trailing slash
+* Sync with upstream ua-parser for user agent parsing
+* Upgrade rollup/babel dependencies
+* Invoke runQueuedFunctions from the main library instead of the snippet. This will allow integrations to take advantage of the queueing feature on sites that do not use the snippet.
+
+#### Breaking Changes
+* Drop JSON polyfill. This will break IE 7 and older. You can install your own JSON polyfill before loading amplitude.
+* Stop committing generated files to the master branch in the git repository. You should not install amplitude from the master git branch. You should never import amplitude.min.js into your build.
+* Drop custom user agent parsing for symbian and blackberry
+
+
+### 4.7.0 (March 12, 2019)
+
+* Cherry-picked from 5.0.0: Add `onInit` method that accepts a callback that will be invoked after init
+
+### 4.6.0 (February 25, 2019)
+
+* Add support for unsetting utm params when a new session is created
+* Update dependencies to pass yarn audit
+* Bugfix: Allow logLevel to be set to disabled.
+* Bugfix: Update ua-parser to work in quirks mode in older internet explorer versions
+* Fetch ua-parsers-js from npm instead of github
+* Add `secureCookie` option to add a secure flag to the cookie
+
+### 4.5.2 (November 10, 2018)
+
+* Bugfix: Default groupProperties to empty object in logEvent.
+
+### 4.5.1 (November 7, 2018)
+
+* Fix error that might occur if another party defines a global variable named `Buffer` that is not actually a `Buffer`.
+
+* Fix bug where the log level was not initialized correctly
+
+### 4.5.0 (October 24, 2018)
+
+* Add support for groupIdentify calls
+
+### 4.4.0 (July 25, 2018)
+
+* Added `trackingOptions` as a configuration option. This allows you to disable the automatic tracking of specific user properties such as ip_address, city, country, etc. See the [Help Center Documentation](https://amplitude.zendesk.com/hc/en-us/articles/115001361248#settings-configuration-options) for instructions on setting up th is configuration.
+
+### 4.3.0 (July 16, 2018)
+
+* Add more context to the 'No request sent' responses
+
+### 4.2.1 (April 19, 2018)
+
+* Add `resetSessionId` method that sets the sessionId to the current time.
+
+### 4.1.1 (March 22, 2018)
+
+* Fix bug where cookie data such as device id from older releases were not migrated
+
+### 4.1.0 (January 18, 2018)
+
+* Allow for numeric user ids
+
+* Namespace local storage with api key to prevent cross domain contamination
+
+### 4.0.0 (November 20, 2017)
+
+* Default `forceHttps` option to `true`.
+
+### 3.8.0 (October 27, 2017)
+
+* Add `logLevel` config option
+
+### 3.7.0 (September 14, 2017)
+
+* Add `setSessionId(sesionId)` method. Note this is not recommended unless you know what are you doing.
+* Added support for Bower. Install using `bower install amplitude-js`.
+* Switched from webpack to Rollup for building the SDK.
+
+### 3.6.0 (September 13, 2017)
+
+* Supports clean NPM module loading eg: `const amplitude = require('amplitude');` or `import 'amplitude' from 'amplitude-js';`
+* SDK is now a proper UMD module. Supports RequireJS with r.js builds now.
+* Updated build process to use webpack
+
+### 3.4.1 (June 29, 2017)
+* Handle SDK loading errors in the load snippet. Please update the load snippets on your website to [the latest version](https://amplitude.zendesk.com/hc/en-us/articles/115001361248-JavaScript-SDK-Installation#installation).
+* Migrating setup instructions and SDK documentation in the README file to Zendesk articles.
 
 ### 3.4.0 (November 8, 2016)
 
@@ -38,7 +141,7 @@
 
 ### 3.0.0 (May 27, 2016)
 
-* Add support for logging events to multiple Amplitude apps. **Note this is a major update, and may break backwards compatability.** See [Readme](https://github.com/amplitude/Amplitude-Javascript#300-update-and-logging-events-to-multiple-amplitude-apps) for details.
+* Add support for logging events to multiple Amplitude apps. **Note this is a major update, and may break backwards compatability.** See [Readme](https://amplitude.zendesk.com/hc/en-us/articles/115001361248-JavaScript-SDK-Installation#backwards-compatibility) for details.
 * Init callback now passes the Amplitude instance as an argument to the callback function.
 
 ### 2.13.0 (May 26, 2016)

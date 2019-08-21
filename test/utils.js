@@ -1,7 +1,7 @@
-describe('utils', function() {
-  var utils = require('../src/utils.js');
-  var constants = require('../src/constants.js');
+import utils from '../src/utils.js';
+import constants from '../src/constants.js';
 
+describe('utils', function() {
   describe('isEmptyString', function() {
     it('should detect empty strings', function() {
       assert.isTrue(utils.isEmptyString(null));
@@ -13,6 +13,112 @@ describe('utils', function() {
       assert.isFalse(utils.isEmptyString("string"));
     });
   });
+
+  describe('setLogLevel', function() {
+    afterEach(() => {
+      utils.setLogLevel('WARN');
+    });
+
+    it('can set log level to DISABLE', function() {
+      utils.setLogLevel('DISABLE');
+      assert.strictEqual(utils.getLogLevel(), utils.logLevels.DISABLE);
+    });
+
+    it('can set log level to ERROR', () => {
+      utils.setLogLevel('ERROR');
+      assert.strictEqual(utils.getLogLevel(), utils.logLevels.ERROR);
+    });
+
+    it('can set log level to WARN', () => {
+      utils.setLogLevel('DISABLE');
+      utils.setLogLevel('WARN');
+      assert.strictEqual(utils.getLogLevel(), utils.logLevels.WARN);
+    });
+
+    it('can set log level to INFO', () => {
+      utils.setLogLevel('INFO');
+      assert.strictEqual(utils.getLogLevel(), utils.logLevels.INFO);
+    });
+  });
+
+  describe('log', function() {
+    beforeEach(function() {
+      utils.setLogLevel('INFO');
+      sinon.spy(console, 'log');
+    });
+
+    afterEach(function() {
+      console.log.restore();
+    });
+
+    describe('setLogLevelShould ignore invalid log levels', function() {
+      utils.setLogLevel('INVALID_LOGLEVEL');
+      assert.strictEqual(utils.getLogLevel(), 2);
+    });
+
+    describe('logLevel is ERROR', function() {
+      beforeEach(function() {
+        utils.setLogLevel('ERROR');
+      });
+
+      it('should not log warnings', function() {
+        utils.log.warn('warning');
+        assert.isFalse(console.log.called);
+      });
+
+      it('should not log info', function() {
+        utils.log.info('info');
+        assert.isFalse(console.log.called);
+      });
+
+      it('should log errors', function() {
+        utils.log.error('error');
+        assert.isTrue(console.log.calledOnce);
+      });
+    });
+
+    describe('logLevel is WARN', function() {
+      beforeEach(function() {
+        utils.setLogLevel('WARN');
+      });
+
+      it('should log warnings', function() {
+        utils.log.warn('warning');
+        assert.isTrue(console.log.calledOnce);
+      });
+
+      it('should log errors', function() {
+        utils.log.error('errors');
+        assert.isTrue(console.log.calledOnce);
+      });
+
+      it('should not log info', function() {
+        utils.log.info('info');
+        assert.isFalse(console.log.called);
+      });
+    });
+
+    describe('logLevel is INFO', function() {
+      beforeEach(function() {
+        utils.setLogLevel('INFO');
+      });
+
+      it('should log errors', function() {
+        utils.log.error('error');
+        assert.isTrue(console.log.calledOnce);
+      });
+
+      it('should log warnings', function() {
+        utils.log.warn('warn');
+        assert.isTrue(console.log.calledOnce);
+      });
+
+      it('should log info', function() {
+        utils.log.info('info');
+        assert.isTrue(console.log.calledOnce);
+      });
+    });
+  })
 
   describe('validateProperties', function() {
     it('should detect invalid event property formats', function() {
@@ -59,7 +165,7 @@ describe('utils', function() {
         'null': null,
         'undefined': undefined,
         'NaN': NaN,
-        'function': utils.log
+        'function': utils.log.warn
       }
       assert.deepEqual({}, utils.validateProperties(properties));
     });
@@ -108,7 +214,7 @@ describe('utils', function() {
         'error': 'Error: oops',
         'string': 'test',
         'array': [0, 1, 2, '3'],
-        'nested_array': ['a'],
+        'nested_array': ['a', {'key': 'value'}],
         'object': {
           'key': 'value',
           '15': 'Error: oops'
@@ -118,7 +224,7 @@ describe('utils', function() {
           'l': [0, 1],
           'o': {
               'k2': 'v2',
-              'l2': ['e2']
+              'l2': ['e2', {'k3': 'v3'}]
           }
         }
       }

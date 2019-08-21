@@ -1,6 +1,5 @@
 /* jshint expr:true */
-
-var Amplitude = require('./amplitude');
+import Amplitude from  './amplitude';
 
 var old = window.amplitude || {};
 var newInstance = new Amplitude();
@@ -11,5 +10,7 @@ for (var instance in old._iq) { // migrate each instance's queue
   }
 }
 
+newInstance.runQueuedFunctions();
+
 // export the instance
-module.exports = newInstance;
+export default newInstance;

@@ -1,7 +1,8 @@
+import '../amplitude-snippet.min.js';
+
 describe('Snippet', function() {
 
   it('amplitude object should exist', function() {
-    assert.isObject(window);
     assert.isObject(window.amplitude);
     assert.isFunction(window.amplitude.init);
     assert.isFunction(window.amplitude.logEvent);
@@ -51,5 +52,20 @@ describe('Snippet', function() {
     assert.lengthOf(amplitude._iq['instance2']._q, 2);
     assert.deepEqual(amplitude._iq['instance2']._q[0], ['init', 'API_KEY2']);
     assert.deepEqual(amplitude._iq['instance2']._q[1], ['logEvent', 'Event']);
+  });
+
+  it('amplitude object should proxy onInit', function() {
+    const callback = () => { };
+    amplitude.getInstance('onInit').onInit(callback);
+    amplitude.getInstance('onInit').init('API_KEY');
+    amplitude.getInstance('onInit').logEvent('Event', {prop: 1});
+    assert.lengthOf(amplitude._iq['oninit']._q, 3);
+    assert.deepEqual(amplitude._iq['oninit']._q[0], ['onInit', callback]);
+  });
+
+  it('amplitude object should proxy resetSessionId', function() {
+    amplitude.getInstance('reset_session_id_instance').init('API_KEY');
+    amplitude.getInstance('reset_session_id_instance').resetSessionId();
+    assert.deepEqual(amplitude._iq['reset_session_id_instance']._q[1], ['resetSessionId']);
   });
 });

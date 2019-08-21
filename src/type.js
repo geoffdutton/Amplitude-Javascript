@@ -13,7 +13,7 @@ var toString = Object.prototype.toString;
  * @api public
  */
 
-module.exports = function(val){
+export default function(val) {
   switch (toString.call(val)) {
     case '[object Date]': return 'date';
     case '[object RegExp]': return 'regexp';
@@ -35,10 +35,10 @@ module.exports = function(val){
     return 'element';
   }
 
-  if (typeof Buffer !== 'undefined' && Buffer.isBuffer(val)) {
+  if (typeof Buffer !== 'undefined' && typeof Buffer.isBuffer === 'function' && Buffer.isBuffer(val)) {
     return 'buffer';
   }
 
   val = val.valueOf ? val.valueOf() : Object.prototype.valueOf.apply(val);
   return typeof val;
-};
+}

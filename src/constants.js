@@ -1,9 +1,10 @@
-module.exports = {
+export default {
   DEFAULT_INSTANCE: '$default_instance',
   API_VERSION: 2,
   MAX_STRING_LENGTH: 4096,
   MAX_PROPERTY_KEYS: 1000,
   IDENTIFY_EVENT: '$identify',
+  GROUP_IDENTIFY_EVENT: '$groupidentify',
 
   // localStorageKeys
   LAST_EVENT_ID: 'amplitude_lastEventId',
@@ -26,5 +27,14 @@ module.exports = {
   REVENUE_PRICE: '$price',
   REVENUE_REVENUE_TYPE: '$revenueType',
 
-  AMP_DEVICE_ID_PARAM: 'amp_device_id'  // url param
+  AMP_DEVICE_ID_PARAM: 'amp_device_id',  // url param
+
+  REFERRER: 'referrer',
+
+  // UTM Params
+  UTM_SOURCE: 'utm_source',
+  UTM_MEDIUM: 'utm_medium',
+  UTM_CAMPAIGN: 'utm_campaign',
+  UTM_TERM: 'utm_term',
+  UTM_CONTENT: 'utm_content'
 };

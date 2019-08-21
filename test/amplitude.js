@@ -1,16 +1,16 @@
+import Amplitude from '../src/amplitude.js';
+import getUtmData from '../src/utm.js';
+import localStorage from '../src/localstorage.js';
+import CookieStorage from '../src/cookiestorage.js';
+import Base64 from '../src/base64.js';
+import cookie from '../src/cookie.js';
+import utils from '../src/utils.js';
+import queryString from 'query-string';
+import Identify from '../src/identify.js';
+import Revenue from '../src/revenue.js';
+
 // maintain for testing backwards compatability
 describe('Amplitude', function() {
-  var Amplitude = require('../src/amplitude.js');
-  var getUtmData = require('../src/utm.js');
-  var localStorage = require('../src/localstorage.js');
-  var CookieStorage = require('../src/cookiestorage.js');
-  var Base64 = require('../src/base64.js');
-  var cookie = require('../src/cookie.js');
-  var utils = require('../src/utils.js');
-  var querystring = require('querystring');
-  var JSON = require('json');
-  var Identify = require('../src/identify.js');
-  var Revenue = require('../src/revenue.js');
   var apiKey = '000000';
   var keySuffix = '_' + apiKey.slice(0,6);
   var userId = 'user';
@@ -35,8 +35,9 @@ describe('Amplitude', function() {
     sessionStorage.clear();
     cookie.remove(amplitude.options.cookieName);
     cookie.remove(amplitude.options.cookieName + keySuffix);
-    cookie.remove(amplitude.options.cookieName + '_app1');
-    cookie.remove(amplitude.options.cookieName + '_app2');
+    cookie.remove(amplitude.options.cookieName + '_' + apiKey);
+    cookie.remove(amplitude.options.cookieName + '_1_app1');
+    cookie.remove(amplitude.options.cookieName + '_2_app2');
     cookie.reset();
   }
 
@@ -134,34 +135,34 @@ describe('Amplitude', function() {
 
       // verify separate localstorages
       assert.deepEqual(
-        JSON.parse(localStorage.getItem('amplitude_unsent'))[0].event_type, 'amplitude event'
+        JSON.parse(localStorage.getItem('amplitude_unsent_' + apiKey))[0].event_type, 'amplitude event'
       );
       assert.deepEqual(
-        JSON.parse(localStorage.getItem('amplitude_unsent'))[1].event_type, 'amplitude event2'
+        JSON.parse(localStorage.getItem('amplitude_unsent_' + apiKey))[1].event_type, 'amplitude event2'
       );
-      assert.equal(localStorage.getItem('amplitude_unsent_identify'), JSON.stringify([]));
-      assert.equal(localStorage.getItem('amplitude_unsent_app1'), JSON.stringify([]));
+      assert.equal(localStorage.getItem('amplitude_unsent_identify_' + apiKey), JSON.stringify([]));
+      assert.equal(localStorage.getItem('amplitude_unsent_1_app1'), JSON.stringify([]));
       assert.deepEqual(
-        JSON.parse(localStorage.getItem('amplitude_unsent_identify_app1'))[0].user_properties, {'$set':{'key':'value'}}
+        JSON.parse(localStorage.getItem('amplitude_unsent_identify_1_app1'))[0].user_properties, {'$set':{'key':'value'}}
       );
       assert.equal(
-        JSON.parse(localStorage.getItem('amplitude_unsent_app2'))[0].event_type, 'app2 event'
+        JSON.parse(localStorage.getItem('amplitude_unsent_2_app2'))[0].event_type, 'app2 event'
       );
-      assert.equal(localStorage.getItem('amplitude_unsent_identify_app2'), JSON.stringify([]));
+      assert.equal(localStorage.getItem('amplitude_unsent_identify_2_app2'), JSON.stringify([]));
 
       // verify separate apiKeys in server requests
       assert.lengthOf(server.requests, 3);
-      assert.equal(JSON.parse(querystring.parse(server.requests[1].requestBody).client), 1);
-      assert.equal(JSON.parse(querystring.parse(server.requests[2].requestBody).client), 2);
+      assert.equal(JSON.parse(queryString.parse(server.requests[1].requestBody).client), 1);
+      assert.equal(JSON.parse(queryString.parse(server.requests[2].requestBody).client), 2);
 
       // verify separate cookie data
-      var cookieData = cookie.get(amplitude.options.cookieName);
+      var cookieData = cookie.get(amplitude.options.cookieName + '_' + apiKey);
       assert.equal(cookieData.deviceId, amplitude.options.deviceId);
 
-      var cookieData1 = cookie.get(app1.options.cookieName + '_app1');
+      var cookieData1 = cookie.get(app1.options.cookieName + '_1_app1');
       assert.equal(cookieData1.deviceId, app1.options.deviceId);
 
-      var cookieData2 = cookie.get(app2.options.cookieName + '_app2');
+      var cookieData2 = cookie.get(app2.options.cookieName + '_2_app2');
       assert.equal(cookieData2.deviceId, app2.options.deviceId);
     });
 
@@ -178,7 +179,7 @@ describe('Amplitude', function() {
         identifyId: 60,
         sequenceNumber: 70
       }
-      cookie.set(amplitude.options.cookieName, cookieData);
+      cookie.set(amplitude.options.cookieName + '_' + apiKey, cookieData);
 
       // default instance loads from existing cookie
       var app = amplitude.getInstance();
@@ -197,7 +198,6 @@ describe('Amplitude', function() {
       assert.notEqual(app1.options.deviceId, 'test_device_id');
       assert.isNull(app1.options.userId);
       assert.isFalse(app1.options.optOut);
-      console.log(app1._sessionId);
       assert.isTrue(app1._sessionId >= now);
       assert.isTrue(app1._lastEventTime >= now);
       assert.equal(app1._eventId, 0);
@@ -274,7 +274,7 @@ describe('Amplitude', function() {
 
     it('should set cookie', function() {
       amplitude.init(apiKey, userId);
-      var stored = cookie.get(amplitude.options.cookieName);
+      var stored = cookie.get(amplitude.options.cookieName + '_' + apiKey);
       assert.property(stored, 'deviceId');
       assert.propertyVal(stored, 'userId', userId);
       assert.lengthOf(stored.deviceId, 37); // increase deviceId length by 1 for 'R' character
@@ -318,7 +318,7 @@ describe('Amplitude', function() {
       assert.equal(amplitude.options.userId, userId);
       assert.isTrue(amplitude.options.optOut);
 
-      var cookieData = cookie.get(amplitude.options.cookieName);
+      var cookieData = cookie.get(amplitude.options.cookieName + '_' + apiKey);
       assert.equal(cookieData.deviceId, deviceId);
       assert.equal(cookieData.userId, userId);
       assert.isTrue(cookieData.optOut);
@@ -342,7 +342,7 @@ describe('Amplitude', function() {
       assert.equal(amplitude.getInstance()._identifyId, 4000);
       assert.equal(amplitude.getInstance()._sequenceNumber, 5000);
 
-      var cookieData = cookie.get(amplitude.options.cookieName);
+      var cookieData = cookie.get(amplitude.options.cookieName + '_' + apiKey);
       assert.equal(cookieData.sessionId, now);
       assert.equal(cookieData.lastEventTime, amplitude.getInstance()._lastEventTime);
       assert.equal(cookieData.eventId, 3000);
@@ -387,7 +387,7 @@ describe('Amplitude', function() {
     it('should skip the migration if the new cookie already has deviceId, sessionId, lastEventTime', function() {
       var now = new Date().getTime();
 
-      cookie.set(amplitude.options.cookieName, {
+      cookie.set(amplitude.options.cookieName + '_' + apiKey, {
         deviceId: 'new_device_id',
         sessionId: now,
         lastEventTime: now
@@ -493,18 +493,18 @@ describe('Amplitude', function() {
       assert.equal(amplitude2.getInstance()._sequenceNumber, 70);
     });
 
-    it('should load saved events from localStorage', function() {
+    it('should load saved events from legacy localStorage', function() {
       var existingEvent = '[{"device_id":"test_device_id","user_id":"test_user_id","timestamp":1453769146589,' +
         '"event_id":49,"session_id":1453763315544,"event_type":"clicked","version_name":"Web","platform":"Web"' +
         ',"os_name":"Chrome","os_version":"47","device_model":"Mac","language":"en-US","api_properties":{},' +
         '"event_properties":{},"user_properties":{},"uuid":"3c508faa-a5c9-45fa-9da7-9f4f3b992fb0","library"' +
-        ':{"name":"amplitude-js","version":"2.9.0"},"sequence_number":130, "groups":{}}]';
+        ':{"name":"amplitude-js","version":"2.9.0"},"sequence_number":130,"groups":{}}]';
       var existingIdentify = '[{"device_id":"test_device_id","user_id":"test_user_id","timestamp":1453769338995,' +
         '"event_id":82,"session_id":1453763315544,"event_type":"$identify","version_name":"Web","platform":"Web"' +
         ',"os_name":"Chrome","os_version":"47","device_model":"Mac","language":"en-US","api_properties":{},' +
         '"event_properties":{},"user_properties":{"$set":{"age":30,"city":"San Francisco, CA"}},"uuid":"' +
         'c50e1be4-7976-436a-aa25-d9ee38951082","library":{"name":"amplitude-js","version":"2.9.0"},"sequence_number"' +
-        ':131, "groups":{}}]';
+        ':131,"groups":{}}]';
       localStorage.setItem('amplitude_unsent', existingEvent);
       localStorage.setItem('amplitude_unsent_identify', existingIdentify);
 
@@ -516,8 +516,35 @@ describe('Amplitude', function() {
       assert.deepEqual(amplitude2.getInstance()._unsentIdentifys, JSON.parse(existingIdentify));
 
       // check local storage keys are still same for default instance
-      assert.equal(localStorage.getItem('amplitude_unsent'), existingEvent);
-      assert.equal(localStorage.getItem('amplitude_unsent_identify'), existingIdentify);
+      assert.equal(localStorage.getItem('amplitude_unsent_' + apiKey), existingEvent);
+      assert.equal(localStorage.getItem('amplitude_unsent_identify_' + apiKey), existingIdentify);
+    });
+
+    it('should load saved events from localStorage', function() {
+      var existingEvent = '[{"device_id":"test_device_id","user_id":"test_user_id","timestamp":1453769146589,' +
+        '"event_id":49,"session_id":1453763315544,"event_type":"clicked","version_name":"Web","platform":"Web"' +
+        ',"os_name":"Chrome","os_version":"47","device_model":"Mac","language":"en-US","api_properties":{},' +
+        '"event_properties":{},"user_properties":{},"uuid":"3c508faa-a5c9-45fa-9da7-9f4f3b992fb0","library"' +
+        ':{"name":"amplitude-js","version":"2.9.0"},"sequence_number":130,"groups":{}}]';
+      var existingIdentify = '[{"device_id":"test_device_id","user_id":"test_user_id","timestamp":1453769338995,' +
+        '"event_id":82,"session_id":1453763315544,"event_type":"$identify","version_name":"Web","platform":"Web"' +
+        ',"os_name":"Chrome","os_version":"47","device_model":"Mac","language":"en-US","api_properties":{},' +
+        '"event_properties":{},"user_properties":{"$set":{"age":30,"city":"San Francisco, CA"}},"uuid":"' +
+        'c50e1be4-7976-436a-aa25-d9ee38951082","library":{"name":"amplitude-js","version":"2.9.0"},"sequence_number"' +
+        ':131,"groups":{}}]';
+      localStorage.setItem('amplitude_unsent', existingEvent);
+      localStorage.setItem('amplitude_unsent_identify', existingIdentify);
+
+      var amplitude2 = new Amplitude();
+      amplitude2.init(apiKey, null, {batchEvents: true});
+
+      // check event loaded into memory
+      assert.deepEqual(amplitude2.getInstance()._unsentEvents, JSON.parse(existingEvent));
+      assert.deepEqual(amplitude2.getInstance()._unsentIdentifys, JSON.parse(existingIdentify));
+
+      // check local storage keys are still same for default instance
+      assert.equal(localStorage.getItem('amplitude_unsent_' + apiKey), existingEvent);
+      assert.equal(localStorage.getItem('amplitude_unsent_identify_' + apiKey), existingIdentify);
     });
 
     it('should validate event properties when loading saved events from localStorage', function() {
@@ -543,9 +570,9 @@ describe('Amplitude', function() {
         'bool': true,
         'string': 'test',
         'array': [0, 1, 2, '3'],
-        'nested_array': ['a'],
+        'nested_array': ['a', {'key':'value'}],
         'object': {'key':'value'},
-        'nested_object': {'k':'v', 'l':[0,1], 'o':{'k2':'v2', 'l2': ['e2']}}
+        'nested_object': {'k':'v', 'l':[0,1], 'o':{'k2':'v2', 'l2': ['e2', {'k3':'v3'}]}}
       }
 
       // check that event loaded into memory
@@ -572,9 +599,9 @@ describe('Amplitude', function() {
         'bool': true,
         'string': 'test',
         'array': [0, 1, 2, '3'],
-        'nested_array': ['a'],
+        'nested_array': ['a', {'key':'value'}],
         'object': {'key':'value'},
-        'nested_object': {'k':'v', 'l':[0,1], 'o':{'k2':'v2', 'l2': ['e2']}}
+        'nested_object': {'k':'v', 'l':[0,1], 'o':{'k2':'v2', 'l2': ['e2', {'k3':'v3'}]}}
       }
 
       // check that event loaded into memory
@@ -606,12 +633,12 @@ describe('Amplitude', function() {
       assert.deepEqual(amplitude2.getInstance()._unsentIdentifys, []);
 
       // check local storage keys are still same
-      assert.equal(localStorage.getItem('amplitude_unsent'), JSON.stringify([]));
-      assert.equal(localStorage.getItem('amplitude_unsent_identify'), JSON.stringify([]));
+      assert.equal(localStorage.getItem('amplitude_unsent_' + apiKey), JSON.stringify([]));
+      assert.equal(localStorage.getItem('amplitude_unsent_identify_' + apiKey), JSON.stringify([]));
 
       // check request
       assert.lengthOf(server.requests, 1);
-      var events = JSON.parse(querystring.parse(server.requests[0].requestBody).e);
+      var events = JSON.parse(queryString.parse(server.requests[0].requestBody).e);
       assert.lengthOf(events, 2);
       assert.equal(events[0].event_id, 49);
       assert.equal(events[1].event_type, '$identify');
@@ -642,7 +669,7 @@ describe('Amplitude', function() {
         'bool': true,
         'string': 'test',
         'array': [0, 1, 2, '3'],
-        'nested_array': ['a'],
+        'nested_array': ['a', {'key':'value'}],
         'object': {
           'key': 'value'
         },
@@ -651,7 +678,7 @@ describe('Amplitude', function() {
           'l': [0, 1],
           'o': {
               'k2': 'v2',
-              'l2': ['e2']
+              'l2': ['e2', {'k3':'v3'}]
           }
         }
       }
@@ -687,7 +714,7 @@ describe('Amplitude', function() {
       assert.equal(amplitude.options.userId, userId);
       assert.equal(amplitude.getInstance()._unsentCount(), 1);
       assert.lengthOf(server.requests, 1);
-      var events = JSON.parse(querystring.parse(server.requests[0].requestBody).e);
+      var events = JSON.parse(queryString.parse(server.requests[0].requestBody).e);
       assert.lengthOf(events, 1);
       assert.equal(events[0].event_type, eventType);
 
@@ -712,7 +739,7 @@ describe('Amplitude', function() {
       assert.lengthOf(amplitude.getInstance()._unsentIdentifys, 1);
       assert.equal(amplitude.getInstance()._unsentCount(), 1);
       assert.lengthOf(server.requests, 1);
-      var events = JSON.parse(querystring.parse(server.requests[0].requestBody).e);
+      var events = JSON.parse(queryString.parse(server.requests[0].requestBody).e);
       assert.lengthOf(events, 1);
       assert.equal(events[0].event_type, '$identify');
       assert.deepEqual(events[0].event_properties, {});
@@ -744,7 +771,7 @@ describe('Amplitude', function() {
       assert.lengthOf(amplitude.getInstance()._unsentIdentifys, 1);
       assert.equal(amplitude.getInstance()._unsentCount(), 1);
       assert.lengthOf(server.requests, 1);
-      var events = JSON.parse(querystring.parse(server.requests[0].requestBody).e);
+      var events = JSON.parse(queryString.parse(server.requests[0].requestBody).e);
       assert.lengthOf(events, 1);
       assert.equal(events[0].event_type, '$identify');
       assert.deepEqual(events[0].event_properties, {});
@@ -769,7 +796,7 @@ describe('Amplitude', function() {
     it('should generate an identify event with groups set', function() {
       amplitude.setGroup('orgId', 15);
       assert.lengthOf(server.requests, 1);
-      var events = JSON.parse(querystring.parse(server.requests[0].requestBody).e);
+      var events = JSON.parse(queryString.parse(server.requests[0].requestBody).e);
       assert.lengthOf(events, 1);
 
       // verify identify event
@@ -873,12 +900,13 @@ describe('setVersionName', function() {
     it('should store device id in cookie', function() {
       amplitude.init(apiKey, null, {'deviceId': 'fakeDeviceId'});
       amplitude.setDeviceId('deviceId');
-      var stored = cookie.get(amplitude.options.cookieName);
+      var stored = cookie.get(amplitude.options.cookieName + '_' + apiKey);
       assert.propertyVal(stored, 'deviceId', 'deviceId');
     });
   });
 
   describe('identify', function() {
+    var clock;
 
     beforeEach(function() {
       clock = sinon.useFakeTimers();
@@ -916,7 +944,7 @@ describe('setVersionName', function() {
       assert.lengthOf(amplitude.getInstance()._unsentIdentifys, 1);
       assert.equal(amplitude.getInstance()._unsentCount(), 1);
       assert.lengthOf(server.requests, 1);
-      var events = JSON.parse(querystring.parse(server.requests[0].requestBody).e);
+      var events = JSON.parse(queryString.parse(server.requests[0].requestBody).e);
       assert.lengthOf(events, 1);
       assert.equal(events[0].event_type, '$identify');
       assert.deepEqual(events[0].event_properties, {});
@@ -967,7 +995,7 @@ describe('setVersionName', function() {
       assert.lengthOf(amplitude.getInstance()._unsentIdentifys, 1);
       assert.equal(amplitude.getInstance()._unsentCount(), 1);
       assert.lengthOf(server.requests, 1);
-      var events = JSON.parse(querystring.parse(server.requests[0].requestBody).e);
+      var events = JSON.parse(queryString.parse(server.requests[0].requestBody).e);
       assert.lengthOf(events, 1);
       assert.equal(events[0].event_type, '$identify');
       assert.deepEqual(events[0].event_properties, {});
@@ -1056,9 +1084,10 @@ describe('setVersionName', function() {
     });
 
     it('should send request', function() {
+      amplitude.options.forceHttps = false;
       amplitude.logEvent('Event Type 1');
       assert.lengthOf(server.requests, 1);
-      assert.equal(server.requests[0].url, 'http://api.amplitude.com/');
+      assert.equal(server.requests[0].url, 'http://api.amplitude.com');
       assert.equal(server.requests[0].method, 'POST');
       assert.equal(server.requests[0].async, true);
     });
@@ -1067,7 +1096,7 @@ describe('setVersionName', function() {
       amplitude.options.forceHttps = true;
       amplitude.logEvent('Event Type 1');
       assert.lengthOf(server.requests, 1);
-      assert.equal(server.requests[0].url, 'https://api.amplitude.com/');
+      assert.equal(server.requests[0].url, 'https://api.amplitude.com');
       assert.equal(server.requests[0].method, 'POST');
       assert.equal(server.requests[0].async, true);
     });
@@ -1076,7 +1105,7 @@ describe('setVersionName', function() {
       amplitude.init(apiKey, null, { forceHttps: true });
       amplitude.logEvent('Event Type 1');
       assert.lengthOf(server.requests, 1);
-      assert.equal(server.requests[0].url, 'https://api.amplitude.com/');
+      assert.equal(server.requests[0].url, 'https://api.amplitude.com');
       assert.equal(server.requests[0].method, 'POST');
       assert.equal(server.requests[0].async, true);
     });
@@ -1089,19 +1118,19 @@ describe('setVersionName', function() {
     it('should send api key', function() {
       amplitude.logEvent('Event Type 2');
       assert.lengthOf(server.requests, 1);
-      assert.equal(querystring.parse(server.requests[0].requestBody).client, apiKey);
+      assert.equal(queryString.parse(server.requests[0].requestBody).client, apiKey);
     });
 
     it('should send api version', function() {
       amplitude.logEvent('Event Type 3');
       assert.lengthOf(server.requests, 1);
-      assert.equal(querystring.parse(server.requests[0].requestBody).v, '2');
+      assert.equal(queryString.parse(server.requests[0].requestBody).v, '2');
     });
 
     it('should send event JSON', function() {
       amplitude.logEvent('Event Type 4');
       assert.lengthOf(server.requests, 1);
-      var events = JSON.parse(querystring.parse(server.requests[0].requestBody).e);
+      var events = JSON.parse(queryString.parse(server.requests[0].requestBody).e);
       assert.equal(events.length, 1);
       assert.equal(events[0].event_type, 'Event Type 4');
     });
@@ -1109,7 +1138,7 @@ describe('setVersionName', function() {
     it('should send language', function() {
       amplitude.logEvent('Event Should Send Language');
       assert.lengthOf(server.requests, 1);
-      var events = JSON.parse(querystring.parse(server.requests[0].requestBody).e);
+      var events = JSON.parse(queryString.parse(server.requests[0].requestBody).e);
       assert.equal(events.length, 1);
       assert.isNotNull(events[0].language);
     });
@@ -1117,7 +1146,7 @@ describe('setVersionName', function() {
     it('should accept properties', function() {
       amplitude.logEvent('Event Type 5', {prop: true});
       assert.lengthOf(server.requests, 1);
-      var events = JSON.parse(querystring.parse(server.requests[0].requestBody).e);
+      var events = JSON.parse(queryString.parse(server.requests[0].requestBody).e);
       assert.deepEqual(events[0].event_properties, {prop: true});
     });
 
@@ -1131,7 +1160,7 @@ describe('setVersionName', function() {
       amplitude.logEvent('Event', {index: 100});
 
       assert.lengthOf(server.requests, 1);
-      var events = JSON.parse(querystring.parse(server.requests[0].requestBody).e);
+      var events = JSON.parse(queryString.parse(server.requests[0].requestBody).e);
       assert.lengthOf(events, 4);
       assert.deepEqual(events[0].event_properties, {index: 1});
       assert.deepEqual(events[3].event_properties, {index: 100});
@@ -1149,7 +1178,7 @@ describe('setVersionName', function() {
       amplitude.logEvent('Event', {index: 100});
 
       assert.lengthOf(server.requests, 1);
-      var events = JSON.parse(querystring.parse(server.requests[0].requestBody).e);
+      var events = JSON.parse(queryString.parse(server.requests[0].requestBody).e);
       assert.lengthOf(events, 10);
       assert.deepEqual(events[0].event_properties, {index: 6});
       assert.deepEqual(events[9].event_properties, {index: 100});
@@ -1168,7 +1197,7 @@ describe('setVersionName', function() {
       amplitude.logEvent('Event', {index: 4});
 
       assert.lengthOf(server.requests, 2);
-      var events = JSON.parse(querystring.parse(server.requests[1].requestBody).e);
+      var events = JSON.parse(queryString.parse(server.requests[1].requestBody).e);
       assert.lengthOf(events, 1);
       assert.deepEqual(events[0].event_properties, {index: 4});
     });
@@ -1207,7 +1236,7 @@ describe('setVersionName', function() {
       amplitude.logEvent('Event', {index: 100});
 
       assert.lengthOf(server.requests, 1);
-      var events = JSON.parse(querystring.parse(server.requests[0].requestBody).e);
+      var events = JSON.parse(queryString.parse(server.requests[0].requestBody).e);
       assert.lengthOf(events, 10);
       assert.deepEqual(events[0].event_properties, {index: 0});
       assert.deepEqual(events[9].event_properties, {index: 9});
@@ -1216,7 +1245,7 @@ describe('setVersionName', function() {
       server.respond();
 
       assert.lengthOf(server.requests, 2);
-      var events = JSON.parse(querystring.parse(server.requests[1].requestBody).e);
+      var events = JSON.parse(queryString.parse(server.requests[1].requestBody).e);
       assert.lengthOf(events, 6);
       assert.deepEqual(events[0].event_properties, {index: 10});
       assert.deepEqual(events[5].event_properties, {index: 100});
@@ -1235,7 +1264,7 @@ describe('setVersionName', function() {
       }
 
       assert.lengthOf(server.requests, 1);
-      var events = JSON.parse(querystring.parse(server.requests[0].requestBody).e);
+      var events = JSON.parse(queryString.parse(server.requests[0].requestBody).e);
       assert.lengthOf(events, 10);
       assert.deepEqual(events[0].event_properties, {index: 0});
       assert.deepEqual(events[9].event_properties, {index: 9});
@@ -1254,7 +1283,7 @@ describe('setVersionName', function() {
       server.respondWith('success');
       server.respond();
       assert.lengthOf(amplitude.getInstance()._unsentEvents, 0);
-      var events = JSON.parse(querystring.parse(server.requests[1].requestBody).e);
+      var events = JSON.parse(queryString.parse(server.requests[1].requestBody).e);
       assert.lengthOf(events, 5);
       assert.deepEqual(events[4].event_properties, {index: 14});
     });
@@ -1277,7 +1306,7 @@ describe('setVersionName', function() {
       assert.lengthOf(server.requests, 1);
       server.respondWith('success');
       server.respond();
-      var events = JSON.parse(querystring.parse(server.requests[0].requestBody).e);
+      var events = JSON.parse(queryString.parse(server.requests[0].requestBody).e);
       assert.lengthOf(events, 1);
       assert.deepEqual(events[0].event_type, 'Event');
     });
@@ -1297,7 +1326,7 @@ describe('setVersionName', function() {
       assert.lengthOf(server.requests, 1);
       server.respondWith('success');
       server.respond();
-      var events = JSON.parse(querystring.parse(server.requests[0].requestBody).e);
+      var events = JSON.parse(queryString.parse(server.requests[0].requestBody).e);
       assert.lengthOf(events, 2);
       assert.deepEqual(events[1].event_type, 'Event2');
 
@@ -1353,7 +1382,7 @@ describe('setVersionName', function() {
       amplitude.logEvent('Event', {index: 100});
 
       assert.lengthOf(server.requests, 1);
-      var events = JSON.parse(querystring.parse(server.requests[0].requestBody).e);
+      var events = JSON.parse(queryString.parse(server.requests[0].requestBody).e);
       assert.lengthOf(events, 10);
       assert.deepEqual(events[0].event_properties, {index: 0});
       assert.deepEqual(events[9].event_properties, {index: 9});
@@ -1362,7 +1391,7 @@ describe('setVersionName', function() {
       server.respond();
 
       assert.lengthOf(server.requests, 2);
-      var events = JSON.parse(querystring.parse(server.requests[1].requestBody).e);
+      var events = JSON.parse(queryString.parse(server.requests[1].requestBody).e);
       assert.lengthOf(events, 5);
       assert.deepEqual(events[0].event_properties, {index: 0});
       assert.deepEqual(events[4].event_properties, {index: 4});
@@ -1384,7 +1413,7 @@ describe('setVersionName', function() {
         server.respond();
       }
 
-      var events = JSON.parse(querystring.parse(server.requests[6].requestBody).e);
+      var events = JSON.parse(queryString.parse(server.requests[6].requestBody).e);
       assert.lengthOf(events, 1);
       assert.deepEqual(events[0].event_properties, {index: 2});
     });
@@ -1538,7 +1567,7 @@ describe('setVersionName', function() {
       amplitude.logEvent('Event', {index: 100}, callback);
 
       assert.lengthOf(server.requests, 1);
-      var events = JSON.parse(querystring.parse(server.requests[0].requestBody).e);
+      var events = JSON.parse(queryString.parse(server.requests[0].requestBody).e);
       assert.lengthOf(events, 16);
 
       // after 413 response received, callback should not have fired
@@ -1550,7 +1579,7 @@ describe('setVersionName', function() {
 
       // after sending first backoff batch, callback still should not have fired
       assert.lengthOf(server.requests, 2);
-      var events = JSON.parse(querystring.parse(server.requests[1].requestBody).e);
+      var events = JSON.parse(queryString.parse(server.requests[1].requestBody).e);
       assert.lengthOf(events, 8);
       server.respondWith('success');
       server.respond();
@@ -1560,7 +1589,7 @@ describe('setVersionName', function() {
 
       // after sending second backoff batch, callback should fire
       assert.lengthOf(server.requests, 3);
-      var events = JSON.parse(querystring.parse(server.requests[1].requestBody).e);
+      var events = JSON.parse(queryString.parse(server.requests[1].requestBody).e);
       assert.lengthOf(events, 8);
       server.respondWith('success');
       server.respond();
@@ -1603,7 +1632,7 @@ describe('setVersionName', function() {
       assert.lengthOf(amplitude.getInstance()._unsentIdentifys, 3);
 
       assert.lengthOf(server.requests, 1);
-      var events = JSON.parse(querystring.parse(server.requests[0].requestBody).e);
+      var events = JSON.parse(queryString.parse(server.requests[0].requestBody).e);
       assert.lengthOf(events, 3);
       for (var i = 0; i < 3; i++) {
         assert.equal(events[i].event_type, '$identify');
@@ -1636,7 +1665,7 @@ describe('setVersionName', function() {
       assert.lengthOf(amplitude.getInstance()._unsentIdentifys, 0);
 
       assert.lengthOf(server.requests, 1);
-      var events = JSON.parse(querystring.parse(server.requests[0].requestBody).e);
+      var events = JSON.parse(queryString.parse(server.requests[0].requestBody).e);
       assert.lengthOf(events, 3);
       for (var i = 0; i < 3; i++) {
         assert.equal(events[i].event_type, 'test');
@@ -1666,7 +1695,7 @@ describe('setVersionName', function() {
       assert.lengthOf(amplitude.getInstance()._unsentIdentifys, 1);
 
       assert.lengthOf(server.requests, 1);
-      var events = JSON.parse(querystring.parse(server.requests[0].requestBody).e);
+      var events = JSON.parse(queryString.parse(server.requests[0].requestBody).e);
       assert.lengthOf(events, 2);
 
       // event should come before identify - maintain order using sequence number
@@ -1711,7 +1740,7 @@ describe('setVersionName', function() {
       assert.lengthOf(amplitude.getInstance()._unsentIdentifys, 2);
 
       assert.lengthOf(server.requests, 1);
-      var events = JSON.parse(querystring.parse(server.requests[0].requestBody).e);
+      var events = JSON.parse(queryString.parse(server.requests[0].requestBody).e);
       assert.lengthOf(events, 6);
 
       // verify the correct coalescing
@@ -1763,7 +1792,7 @@ describe('setVersionName', function() {
       assert.lengthOf(amplitude.getInstance()._unsentIdentifys, 2);
 
       assert.lengthOf(server.requests, 1);
-      var events = JSON.parse(querystring.parse(server.requests[0].requestBody).e);
+      var events = JSON.parse(queryString.parse(server.requests[0].requestBody).e);
       assert.lengthOf(events, 3);
 
       // event should come before identify - prioritize events with no sequence number
@@ -1815,7 +1844,7 @@ describe('setVersionName', function() {
       assert.equal(amplitude.getInstance()._unsentCount(), 1);
       assert.lengthOf(server.requests, 3);
 
-      var events = JSON.parse(querystring.parse(server.requests[2].requestBody).e);
+      var events = JSON.parse(queryString.parse(server.requests[2].requestBody).e);
       assert.lengthOf(events, 1);
       assert.equal(events[0].event_type, '$identify');
       assert.isTrue('$add' in events[0].user_properties);
@@ -1845,7 +1874,7 @@ describe('setVersionName', function() {
       assert.equal(amplitude.getInstance()._unsentCount(), 1);
       assert.lengthOf(server.requests, 3);
 
-      var events = JSON.parse(querystring.parse(server.requests[2].requestBody).e);
+      var events = JSON.parse(queryString.parse(server.requests[2].requestBody).e);
       assert.lengthOf(events, 1);
       assert.equal(events[0].event_type, 'test');
       assert.deepEqual(events[0].user_properties, {});
@@ -1854,7 +1883,7 @@ describe('setVersionName', function() {
     it('should truncate long event property strings', function() {
       var longString = new Array(5000).join('a');
       amplitude.logEvent('test', {'key': longString});
-      var event = JSON.parse(querystring.parse(server.requests[0].requestBody).e)[0];
+      var event = JSON.parse(queryString.parse(server.requests[0].requestBody).e)[0];
 
       assert.isTrue('key' in event.event_properties);
       assert.lengthOf(event.event_properties['key'], 4096);
@@ -1863,7 +1892,7 @@ describe('setVersionName', function() {
     it('should truncate long user property strings', function() {
       var longString = new Array(5000).join('a');
       amplitude.identify(new Identify().set('key', longString));
-      var event = JSON.parse(querystring.parse(server.requests[0].requestBody).e)[0];
+      var event = JSON.parse(queryString.parse(server.requests[0].requestBody).e)[0];
 
       assert.isTrue('$set' in event.user_properties);
       assert.lengthOf(event.user_properties['$set']['key'], 4096);
@@ -1884,7 +1913,7 @@ describe('setVersionName', function() {
       clock.tick(20);
       amplitude2.setUserProperties({'key':'value'}); // identify event at time 30
 
-      var cookieData = JSON.parse(localStorage.getItem('amp_cookiestore_amplitude_id'));
+      var cookieData = JSON.parse(localStorage.getItem('amp_cookiestore_amplitude_id_' + apiKey));
       assert.deepEqual(cookieData, {
         'deviceId': deviceId,
         'userId': null,
@@ -1927,7 +1956,7 @@ describe('setVersionName', function() {
 
       assert.lengthOf(amplitude.getInstance()._unsentEvents, 5);
       assert.lengthOf(server.requests, 1);
-      var events = JSON.parse(querystring.parse(server.requests[0].requestBody).e);
+      var events = JSON.parse(queryString.parse(server.requests[0].requestBody).e);
       assert.lengthOf(events, 5);
 
       assert.deepEqual(events[0].event_properties, {});
@@ -1940,9 +1969,9 @@ describe('setVersionName', function() {
         'error': 'Error: oops',
         'string': 'test',
         'array': [0, 1, 2, '3'],
-        'nested_array': ['a'],
+        'nested_array': ['a', {'key': 'value'}],
         'object': {'key':'value', '15':'Error: oops'},
-        'nested_object': {'k':'v', 'l':[0,1], 'o':{'k2':'v2', 'l2': ['e2']}}
+        'nested_object': {'k':'v', 'l':[0,1], 'o':{'k2':'v2', 'l2': ['e2', {'k3': 'v3'}]}}
       });
     });
 
@@ -2002,7 +2031,7 @@ describe('setVersionName', function() {
 
       amplitude.logEventWithGroups('Test', eventProperties, groups, callback);
       assert.lengthOf(server.requests, 1);
-      var events = JSON.parse(querystring.parse(server.requests[0].requestBody).e);
+      var events = JSON.parse(queryString.parse(server.requests[0].requestBody).e);
       assert.lengthOf(events, 1);
 
       // verify event is correctly formatted
@@ -2062,7 +2091,7 @@ describe('setVersionName', function() {
       amplitude.logEvent('Event Type 1');
       assert.lengthOf(server.requests, 1);
 
-      var events = JSON.parse(querystring.parse(server.requests[0].requestBody).e);
+      var events = JSON.parse(queryString.parse(server.requests[0].requestBody).e);
       assert.lengthOf(events, 1);
     });
 
@@ -2089,7 +2118,7 @@ describe('setVersionName', function() {
 
       amplitude.identify(new Identify().add('test', 100));
       assert.lengthOf(server.requests, 1);
-      var events = JSON.parse(querystring.parse(server.requests[0].requestBody).e);
+      var events = JSON.parse(queryString.parse(server.requests[0].requestBody).e);
       assert.lengthOf(events, 10);
       assert.deepEqual(events[0].user_properties, {$add: {'test': 6}});
       assert.deepEqual(events[9].user_properties, {$add: {'test': 100}});
@@ -2116,7 +2145,7 @@ describe('setVersionName', function() {
 
       amplitude.setUserProperties({user_prop: true});
       assert.lengthOf(server.requests, 1);
-      var events = JSON.parse(querystring.parse(server.requests[0].requestBody).e);
+      var events = JSON.parse(queryString.parse(server.requests[0].requestBody).e);
       assert.equal(events[0].user_properties.utm_campaign, undefined);
       assert.equal(events[0].user_properties.utm_content, undefined);
       assert.equal(events[0].user_properties.utm_medium, undefined);
@@ -2133,7 +2162,7 @@ describe('setVersionName', function() {
       amplitude.logEvent('UTM Test Event', {});
 
       assert.lengthOf(server.requests, 1);
-      var events = JSON.parse(querystring.parse(server.requests[0].requestBody).e);
+      var events = JSON.parse(queryString.parse(server.requests[0].requestBody).e);
       assert.equal(events[0].event_type, '$identify');
       assert.deepEqual(events[0].user_properties, {
         '$setOnce': {
@@ -2166,7 +2195,7 @@ describe('setVersionName', function() {
         }
 
       assert.lengthOf(server.requests, 1);
-      var events = JSON.parse(querystring.parse(server.requests[0].requestBody).e);
+      var events = JSON.parse(queryString.parse(server.requests[0].requestBody).e);
       assert.equal(events[0].event_type, '$identify');
       assert.deepEqual(events[0].user_properties, {
         '$setOnce': {
@@ -2183,7 +2212,7 @@ describe('setVersionName', function() {
 
       amplitude.logEvent('UTM Test Event', {});
       assert.lengthOf(server.requests, 2);
-      var events = JSON.parse(querystring.parse(server.requests[1].requestBody).e);
+      var events = JSON.parse(queryString.parse(server.requests[1].requestBody).e);
       assert.deepEqual(events[0].user_properties, {});
     });
   });
@@ -2208,7 +2237,7 @@ describe('setVersionName', function() {
 
       amplitude.setUserProperties({user_prop: true});
       assert.lengthOf(server.requests, 1);
-      var events = JSON.parse(querystring.parse(server.requests[0].requestBody).e);
+      var events = JSON.parse(queryString.parse(server.requests[0].requestBody).e);
       assert.equal(events[0].user_properties.referrer, undefined);
       assert.equal(events[0].user_properties.referring_domain, undefined);
     });
@@ -2219,7 +2248,7 @@ describe('setVersionName', function() {
       amplitude.init(apiKey, undefined, {includeReferrer: true, batchEvents: true, eventUploadThreshold: 2});
       amplitude.logEvent('Referrer Test Event', {});
       assert.lengthOf(server.requests, 1);
-      var events = JSON.parse(querystring.parse(server.requests[0].requestBody).e);
+      var events = JSON.parse(queryString.parse(server.requests[0].requestBody).e);
       assert.lengthOf(events, 2);
 
       var expected = {
@@ -2258,7 +2287,7 @@ describe('setVersionName', function() {
      */
     function revenueEqual(api, event) {
       assert.lengthOf(server.requests, 1);
-      var events = JSON.parse(querystring.parse(server.requests[0].requestBody).e);
+      var events = JSON.parse(queryString.parse(server.requests[0].requestBody).e);
       assert.deepEqual(events[0].api_properties, api || {});
       assert.deepEqual(events[0].event_properties, event || {});
     }
@@ -2332,7 +2361,7 @@ describe('setVersionName', function() {
 
       amplitude.logRevenueV2(revenue);
       assert.lengthOf(server.requests, 1);
-      var events = JSON.parse(querystring.parse(server.requests[0].requestBody).e);
+      var events = JSON.parse(queryString.parse(server.requests[0].requestBody).e);
       assert.equal(events.length, 1);
       var event = events[0];
       assert.equal(event.event_type, 'revenue_amount');
@@ -2369,7 +2398,7 @@ describe('setVersionName', function() {
       ]};
       amplitude.logRevenueV2(proxyRevenue);
       assert.lengthOf(server.requests, 1);
-      var events = JSON.parse(querystring.parse(server.requests[0].requestBody).e);
+      var events = JSON.parse(queryString.parse(server.requests[0].requestBody).e);
       var event = events[0];
       assert.equal(event.event_type, 'revenue_amount');
 
@@ -2399,7 +2428,7 @@ describe('setVersionName', function() {
       clock.tick(30 * 60 * 1000 + 1);
       amplitude.logEvent('Event Type 1');
       assert.lengthOf(server.requests, 1);
-      var events = JSON.parse(querystring.parse(server.requests[0].requestBody).e);
+      var events = JSON.parse(queryString.parse(server.requests[0].requestBody).e);
       assert.equal(events.length, 1);
       assert.notEqual(events[0].session_id, sessionId);
       assert.notEqual(amplitude.getInstance()._sessionId, sessionId);

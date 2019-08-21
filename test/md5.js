@@ -1,4 +1,4 @@
-var md5 = require('JavaScript-MD5');
+import md5 from 'blueimp-md5';
 
 describe('MD5', function() {
   var encodeCases = [

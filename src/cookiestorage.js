@@ -5,10 +5,9 @@
  * Uses cookie if available, otherwise fallback to localstorage.
  */
 
-var Constants = require('./constants');
-var Cookie = require('./cookie');
-var JSON = require('json'); // jshint ignore:line
-var localStorage = require('./localstorage'); // jshint ignore:line
+import Constants from './constants';
+import Cookie from './cookie';
+import localStorage from './localstorage'; // jshint ignore:line
 
 var cookieStorage = function() {
   this.storage = null;
@@ -43,12 +42,14 @@ cookieStorage.prototype.getStorage = function() {
     this.storage = {
       _options: {
         expirationDays: undefined,
-        domain: undefined
+        domain: undefined,
+        secure: false,
       },
       reset: function() {
         this._options = {
           expirationDays: undefined,
-          domain: undefined
+          domain: undefined,
+          secure: false,
         };
       },
       options: function(opts) {
@@ -59,7 +60,7 @@ cookieStorage.prototype.getStorage = function() {
         this._options.expirationDays = opts.expirationDays || this._options.expirationDays;
         // localStorage is specific to subdomains
         this._options.domain = opts.domain || this._options.domain || window.location.hostname;
-        return this._options;
+        return this._options.secure = opts.secure || false;
       },
       get: function(name) {
         try {
@@ -89,4 +90,4 @@ cookieStorage.prototype.getStorage = function() {
   return this.storage;
 };
 
-module.exports = cookieStorage;
+export default cookieStorage;
