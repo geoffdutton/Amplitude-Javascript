@@ -34,7 +34,6 @@ Amplitude.prototype.getInstance = function getInstance(instance) {
   return client;
 };
 
-if (BUILD_COMPAT_SNIPPET) {
   /**
    * Run functions queued up by proxy loading snippet
    * @private
@@ -56,7 +55,6 @@ if (BUILD_COMPAT_SNIPPET) {
       }
     }
   };
-}
 
 if (BUILD_COMPAT_2_0) {
   /**
